@@ -12,6 +12,12 @@ permissions:
   artifact-metadata: write
 
 jobs:
+  approval:
+    name: Release approval
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - run: echo "Approval granted"
   release:
     runs-on: ubuntu-latest
     steps:
