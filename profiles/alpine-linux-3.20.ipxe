@@ -1,0 +1,24 @@
+#!ipxe
+# Alpine Linux 3.20 netboot (LTS kernel).
+dhcp
+
+# ---------------- Network config ----------------
+# The variables ${IP_ADDRESS}, ${GATEWAY},
+# ${NETMASK}, and ${IFACE} are automatically
+# populated during script execution.
+
+set client_ip ${IP_ADDRESS}
+set gateway ${GATEWAY}
+set netmask ${NETMASK}
+set iface ${IFACE}
+set dns1 10.100.0.53
+set dns2 10.100.0.54
+# -------------------------------------------------
+
+set version v3.20
+set arch x86_64
+set mirror http://dl-cdn.alpinelinux.org/alpine/${version}/releases/${arch}
+set repo http://dl-cdn.alpinelinux.org/alpine/${version}/main
+kernel ${mirror}/netboot/vmlinuz-lts ip=dhcp alpine_repo=${repo} modules=loop,squashfs,sd-mod,usb-storage
+initrd ${mirror}/netboot/initramfs-lts
+boot

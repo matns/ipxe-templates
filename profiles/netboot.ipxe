@@ -1,0 +1,4 @@
+#!ipxe
+# Chainload the community netboot.xyz menu which provides hundreds of installers.
+dhcp
+chain --autofree http://boot.netboot.xyz
