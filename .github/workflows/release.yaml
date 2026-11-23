@@ -20,16 +20,33 @@ jobs:
       artifact-metadata: "write" # To write build provenance
     runs-on: "ubuntu-latest"
     steps:
+      - name: "Prepare"
+        id: "prepare"
+        shell: "bash"
+        env:
+          GITHUB_WORKSPACE=${{ github.workspace }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "repo_checkout_dir=${GITHUB_WORKSPACE}/source"
+          } >> "$GITHUB_OUTPUT"
+
       - name: "Checkout"
-        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+        uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" # v7.0.1
         with:
           persist-credentials: false
+          path: "${{ steps.prepare.outputs.repo_checkout_dir }}"
 
       - name: "Build iPXE Scripts"
         id: "build"
+        env:
+          REPO_CHECKOUT_DIR="${{ steps.prepare.outputs.repo_checkout_dir }}"
         run: |
+          set -euo pipefail
+
           build_dir="$(mktemp -d)"
-          cp -r profiles/*.ipxe "${build_dir}"
+          cp "${REPO_CHECKOUT_DIR}/profiles/*.ipxe" "${build_dir}"
 
           {
             echo "build_dir=${build_dir}"
@@ -90,6 +107,8 @@ jobs:
           PATHNAME_COSIGN_BUNDLE: "${{ steps.sign-release-checksums.outputs.pathname_cosign_bundle }}"
           BUILD_DIR: "${{ steps.build.outputs.build_dir }}"
         run: |
+          set -euo pipefail
+
           dist="$(mktemp -d)"
 
           cp "${BUILD_DIR}"/*.ipxe "${dist}/"
@@ -112,6 +131,8 @@ jobs:
           GH_TOKEN: "${{ github.token }}"
           DIST_DIR: "${{ steps.assemble-dist.outputs.dist_dir }}"
         run: |
+          set -euo pipefail
+
           gh release create "${GITHUB_REF_NAME}" "${DIST_DIR}/*" \
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \
