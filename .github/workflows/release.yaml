@@ -86,12 +86,15 @@ jobs:
       - name: "Assemble Dist"
         id: "assemble-dist"
         env:
+          PATHNAME_CHECKSUMS: "${{ steps.generate-release-checksums.outputs.pathname_checksums }}"
           PATHNAME_COSIGN_BUNDLE: "${{ steps.sign-release-checksums.outputs.pathname_cosign_bundle }}"
           BUILD_DIR: "${{ steps.build.outputs.build_dir }}"
         run: |
           dist="$(mktemp -d)"
 
           cp "${BUILD_DIR}"/*.ipxe "${dist}/"
+
+          cp "${PATHNAME_CHECKSUMS}" "${dist}/"
           cp "${PATHNAME_COSIGN_BUNDLE}" "${dist}/"
 
           {
