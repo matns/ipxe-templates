@@ -9,8 +9,6 @@ concurrency:
   cancel-in-progress: false
   queue: "max"
 
-env:
-  SOURCE_NAME: "ipxe-templates"
 permissions: {}
 jobs:
   release:
@@ -43,6 +41,7 @@ jobs:
         working-directory: "${{ steps.build.outputs.build_dir }}"
         env:
           VERSION: "${{ github.ref }}"
+          SOURCE_NAME: ${{ github.event.repository.name }}
         run: |-
           set -euo pipefail
 
