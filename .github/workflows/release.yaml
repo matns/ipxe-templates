@@ -50,7 +50,7 @@ jobs:
           filename="${SOURCE_NAME}-${VERSION}.sha256sums"
           pathname_checksums="${dir}/${filename}"
 
-          sha256sum -- * > "${$pathname_checksums}"
+          sha256sum -- * > "${pathname_checksums}"
           sha256sum --check --strict "${pathname_checksums}"
 
           {
