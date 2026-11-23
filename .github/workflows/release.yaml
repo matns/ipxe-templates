@@ -39,12 +39,12 @@ jobs:
       - name: "Build iPXE Scripts"
         id: "build"
         env:
-          REPO_CHECKOUT_DIR="${{ steps.prepare.outputs.repo_checkout_dir }}"
+          REPO_CHECKOUT_DIR: "${{ steps.prepare.outputs.repo_checkout_dir }}"
         run: |
           set -euo pipefail
 
           build_dir="$(mktemp -d)"
-          cp "${REPO_CHECKOUT_DIR}/profiles/*.ipxe" "${build_dir}"
+          cp "${REPO_CHECKOUT_DIR}"/profiles/*.ipxe "${build_dir}"
 
           {
             echo "build_dir=${build_dir}"
