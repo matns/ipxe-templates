@@ -40,7 +40,7 @@ jobs:
         shell: "bash"
         working-directory: "${{ steps.build.outputs.build_dir }}"
         env:
-          VERSION: "${{ github.ref }}"
+          VERSION: "${{ github.ref_name }}"
           SOURCE_NAME: ${{ github.event.repository.name }}
         run: |-
           set -euo pipefail
