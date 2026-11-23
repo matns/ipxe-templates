@@ -87,7 +87,7 @@ jobs:
       - name: "Assemble Dist"
         id: "assemble-dist"
         env:
-          PATHNAME_COSIGN_BUNDLE: "${{ steps.sign-release-checksums.outputs.pathname_cosign_bundle"
+          PATHNAME_COSIGN_BUNDLE: "${{ steps.sign-release-checksums.outputs.pathname_cosign_bundle }}"
           BUILD_DIR: "${{ steps.build.outputs.build_dir }}"
         run: |
           dist="$(mktemp -d)"
