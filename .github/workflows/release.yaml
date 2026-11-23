@@ -109,7 +109,7 @@ jobs:
           GH_TOKEN: "${{ github.token }}"
           DIST_DIR: "${{ steps.assemble-dist.outputs.dist_dir }}"
         run: |
-          gh release create "${GITHUB_REF_NAME}" "${BUILD_DIR}/*" \
+          gh release create "${GITHUB_REF_NAME}" "${DIST_DIR}/*" \
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
