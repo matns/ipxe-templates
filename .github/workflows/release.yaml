@@ -28,11 +28,11 @@ jobs:
       - name: "Build iPXE Scripts"
         id: "build"
         run: |
-          build="$(mktemp -d)"
-          cp -r profiles/*.ipxe "${build}"
+          build_dir="$(mktemp -d)"
+          cp -r profiles/*.ipxe "${build_dir}"
 
           {
-            echo "build_dir=${build}"
+            echo "build_dir=${build_dir}"
           } >> "$GITHUB_OUTPUT"
 
       - name: "Generate Release Checksums"
