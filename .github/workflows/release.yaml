@@ -1,46 +1,116 @@
-name: Publish release
-
+---
+name: "release"
 on:
   push:
     tags:
       - "v[0-9]*"
+concurrency:
+  group: "release"
+  cancel-in-progress: false
+  queue: "max"
 
-permissions:
-  contents: write
-  id-token: write
-  attestations: write
-  artifact-metadata: write
-
+env:
+  SOURCE_NAME: "ipxe-templates"
+permissions: {}
 jobs:
-  approval:
-    name: Release approval
-    runs-on: ubuntu-latest
-    environment: main
-    steps:
-      - run: echo "Approval granted"
   release:
-    runs-on: ubuntu-latest
+    environment: "publish-github-release"
+    permissions:
+      contents: "write" # To publish GitHub Release
+      id-token: "write" # To write build provenance
+      attestations: "write" # To write build provenance
+      artifact-metadata: "write" # To write build provenance
+    runs-on: "ubuntu-latest"
     steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Build ipxe scripts
-        run: |
-          mkdir -p dist
-          cp -r profiles/*.ipxe dist
-
-      - name: Generate build provenance attestation
-        id: attest
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+      - name: "Checkout"
+        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
         with:
-          subject-path: dist/*
+          persist-credentials: false
+
+      - name: "Build iPXE Scripts"
+        id: "build"
+        run: |
+          build="$(mktemp -d)"
+          cp -r profiles/*.ipxe "${build}"
+
+          {
+            echo "build_dir=${build}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: "Generate Release Checksums"
+        id: "generate-release-checksums"
+        shell: "bash"
+        working-directory: "${{ steps.build.outputs.build_dir }}"
+        env:
+          VERSION: "${{ github.ref }}"
+        run: |-
+          set -euo pipefail
+
+          dir="$(mktemp -d)"
+          filename="${SOURCE_NAME}-${VERSION}.sha256sums"
+          pathname_checksums="${dir}/${filename}"
+
+          sha256sum -- * > "${$pathname_checksums}"
+          sha256sum --check --strict "${$pathname_checksums}"
+
+          {
+            echo "pathname_checksums=${pathname_checksums}"
+            echo "filename_checksums=${filename}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: "Set up Cosign"
+        uses: "sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532" # v4.1.3
+
+      - name: "Sign Release Checksums"
+        id: "sign-release-checksums"
+        shell: "bash"
+        env:
+          PATHNAME_CHECKSUMS: "${{ steps.generate-release-checksums.outputs.pathname_checksums }}"
+          FILENAME_CHECKSUMS: "${{ steps.generate-release-checksums.outputs.filename_checksums }}"
+        run: |-
+          set -euo pipefail
+
+          filename_bundle="${FILENAME_CHECKSUMS}.sigstore.json"
+
+          dir="$(mktemp -d)"
+          out="${dir}/${filename_bundle}"
+
+          cosign sign-blob \
+            "$PATHNAME_CHECKSUMS" \
+            --bundle "${out}" \
+            --yes
+
+          {
+            echo "pathname_cosign_bundle=${out}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: "Assemble Dist"
+        id: "assemble-dist"
+        env:
+          PATHNAME_COSIGN_BUNDLE: "${{ steps.sign-release-checksums.outputs.pathname_cosign_bundle"
+          BUILD_DIR: "${{ steps.build.outputs.build_dir }}"
+        run: |
+          dist="$(mktemp -d)"
+
+          cp "${BUILD_DIR}"/*.ipxe "${dist}/"
+          cp "${PATHNAME_COSIGN_BUNDLE}" "${dist}/"
+
+          {
+            echo "dist_dir=${dist}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: "Generate Build Provenance Attestation"
+        uses: "actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26" # v4.1.0
+        with:
+          subject-path: "${{ steps.assemble-dist.outputs.dist_dir }}/*"
           show-summary: true
 
-      - name: Publish GitHub release
+      - name: "Publish GitHub release"
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: "${{ github.token }}"
+          DIST_DIR: "${{ steps.assemble-dist.outputs.dist_dir }}"
         run: |
-          gh release create "${GITHUB_REF_NAME}" dist/* \
+          gh release create "${GITHUB_REF_NAME}" "${BUILD_DIR}/*" \
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
