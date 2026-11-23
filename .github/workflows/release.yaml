@@ -23,8 +23,6 @@ jobs:
       - name: "Prepare"
         id: "prepare"
         shell: "bash"
-        env:
-          GITHUB_WORKSPACE=${{ github.workspace }}
         run: |
           set -euo pipefail
 
